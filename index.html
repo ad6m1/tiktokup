@@ -1003,7 +1003,7 @@ function setDescMode(m){
 }
 
 // ============================================================
-//  AI ANALYSIS — Gemini via direct call
+//  AI ANALYSIS — routed through n8n → Gemini (no CORS/quota issues)
 // ============================================================
 async function doAnalyze(){
   const key=cfg('geminiKey');
@@ -1016,40 +1016,31 @@ async function doAnalyze(){
   document.getElementById('ai-result').classList.remove('show');
 
   try {
-    document.getElementById('ai-load-txt').textContent='استخراج إطار...';
-    const thumb=await grabThumb(vidFile);
+    document.getElementById('ai-load-txt').textContent='استخراج إطار من الفيديو...';
+    const thumb = await grabThumb(vidFile);
 
-    document.getElementById('ai-load-txt').textContent='Gemini يحلل...';
+    document.getElementById('ai-load-txt').textContent='n8n يرسل لـ Gemini...';
 
-    const prompt=`أنت خبير محتوى TikTok للجمهور العراقي العربي.
-معلومات الفيديو: اسم=${vidFile.name} حجم=${fmtSz(vidFile.size)} نوع=${vidFile.type}
+    // Send to n8n which forwards to Gemini (avoids CORS & quota issues)
+    const fd = new FormData();
+    fd.append('action',   'analyze');
+    fd.append('geminiKey', key);
+    fd.append('filename',  vidFile.name);
+    fd.append('filesize',  fmtSz(vidFile.size));
+    fd.append('filetype',  vidFile.type);
+    if(thumb) fd.append('thumb', thumb);
 
-حلل الصورة وأعط الرد بـ JSON فقط بدون أي نص إضافي:
-{
-  "caption": "وصف احترافي جذاب بالعربي (2-3 جمل) يشجع التفاعل",
-  "hashtags": ["هاشتاق1","هاشتاق2","هاشتاق3","هاشتاق4","هاشتاق5","هاشتاق6","هاشتاق7","هاشتاق8"],
-  "category": "فئة الفيديو",
-  "best_time": "أفضل وقت نشر",
-  "algo_tips": ["نصيحة1","نصيحة2","نصيحة3"]
-}`;
+    const r = await fetch(cfg('webhook'), { method:'POST', body:fd });
 
-    const body={ contents:[{ parts: thumb
-      ? [{ inline_data:{ mime_type:'image/jpeg', data:thumb } },{ text:prompt }]
-      : [{ text:prompt+'\n(بدون صورة)' }]
-    }] };
+    let data = {};
+    const ct = r.headers.get('content-type')||'';
+    if(ct.includes('json')) data = await r.json();
+    else { const t=await r.text(); try{data=JSON.parse(t)}catch{data={message:t}} }
 
-    const r=await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${key}`,
-      { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }
-    );
+    if(!r.ok || data.error) throw new Error(data.message||'n8n error '+r.status);
+    if(!data.caption)       throw new Error('لم يرجع n8n نتيجة صحيحة');
 
-    if(!r.ok){ const e=await r.json(); throw new Error(e.error?.message||'Gemini error '+r.status); }
-
-    const d=await r.json();
-    const raw=d.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    const m=raw.match(/\{[\s\S]*\}/);
-    if(!m) throw new Error('لم يستطع Gemini تحليل الفيديو');
-    showAnalysis(JSON.parse(m[0]));
+    showAnalysis(data);
 
   } catch(e){
     document.getElementById('ai-loading').classList.remove('show');
