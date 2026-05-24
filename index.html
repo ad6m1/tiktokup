@@ -1,0 +1,2293 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TikTok Publisher — Ahmed Marketing</title>
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;TikTok Publisher&quot;,&quot;short_name&quot;:&quot;TikTok&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#0a0a0f&quot;,&quot;theme_color&quot;:&quot;#fe2c55&quot;}">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --tt-red: #fe2c55;
+    --tt-cyan: #25f4ee;
+    --tt-dark: #0a0a0f;
+    --tt-card: #141418;
+    --tt-border: #2a2a35;
+    --tt-text: #f0f0f5;
+    --tt-muted: #888899;
+    --tt-green: #00e676;
+    --tt-warn: #ffab40;
+    --phone-w: 390px;
+    --phone-h: 844px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--tt-dark);
+    font-family: 'Cairo', sans-serif;
+    color: var(--tt-text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 50%, rgba(254,44,85,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 50%, rgba(37,244,238,0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== DESKTOP WRAPPER ===== */
+  .desktop-wrapper {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  /* ===== PHONE SHELL ===== */
+  .phone-shell {
+    width: var(--phone-w);
+    height: var(--phone-h);
+    background: #0d0d12;
+    border-radius: 52px;
+    border: 2px solid #2a2a40;
+    box-shadow:
+      0 0 0 1px #1a1a28,
+      0 30px 80px rgba(0,0,0,0.8),
+      0 0 60px rgba(254,44,85,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.06);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Notch */
+  .phone-notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 34px;
+    background: #0d0d12;
+    border-radius: 0 0 20px 20px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .notch-cam {
+    width: 10px; height: 10px;
+    background: #1a1a28;
+    border-radius: 50%;
+    border: 1px solid #333;
+  }
+  .notch-speaker {
+    width: 50px; height: 5px;
+    background: #1a1a28;
+    border-radius: 3px;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 44px;
+    padding: 10px 24px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    z-index: 50;
+  }
+  .status-time {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--tt-text);
+  }
+  .status-icons {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    font-size: 11px;
+    color: var(--tt-text);
+    direction: ltr;
+  }
+  .battery-icon {
+    width: 22px; height: 11px;
+    border: 1.5px solid var(--tt-text);
+    border-radius: 2px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 1px;
+  }
+  .battery-icon::after {
+    content: '';
+    position: absolute;
+    right: -4px;
+    width: 2px; height: 5px;
+    background: var(--tt-text);
+    border-radius: 0 1px 1px 0;
+  }
+  .battery-fill {
+    height: 100%;
+    width: 70%;
+    background: var(--tt-green);
+    border-radius: 1px;
+  }
+
+  /* Screen */
+  .phone-screen {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    transform: translateX(30px);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(0);
+  }
+  .screen.slide-left {
+    transform: translateX(-30px);
+    opacity: 0;
+  }
+
+  /* Custom scrollbar */
+  .screen::-webkit-scrollbar { width: 3px; }
+  .screen::-webkit-scrollbar-track { background: transparent; }
+  .screen::-webkit-scrollbar-thumb { background: var(--tt-border); border-radius: 2px; }
+
+  /* ===== HEADER ===== */
+  .app-header {
+    padding: 14px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(13,13,18,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--tt-border);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  .app-header .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tiktok-logo-icon {
+    width: 30px; height: 30px;
+    background: var(--tt-card);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .app-title {
+    font-size: 16px;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--tt-red), var(--tt-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .back-btn {
+    width: 34px; height: 34px;
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    color: var(--tt-text);
+  }
+  .back-btn:hover { background: var(--tt-border); }
+
+  /* ===== HOME SCREEN ===== */
+  .home-content {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .welcome-banner {
+    background: linear-gradient(135deg, rgba(254,44,85,0.15), rgba(37,244,238,0.08));
+    border: 1px solid rgba(254,44,85,0.3);
+    border-radius: 18px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .welcome-banner::before {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 100px; height: 100px;
+    background: radial-gradient(circle, rgba(254,44,85,0.3), transparent 70%);
+  }
+  .welcome-banner h2 {
+    font-size: 20px;
+    font-weight: 900;
+    margin-bottom: 4px;
+  }
+  .welcome-banner p {
+    font-size: 12px;
+    color: var(--tt-muted);
+  }
+
+  /* API Config card */
+  .config-card {
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .config-card h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--tt-cyan);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .config-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .config-label {
+    font-size: 11px;
+    color: var(--tt-muted);
+    font-weight: 600;
+  }
+  .config-input {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--tt-border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--tt-text);
+    font-family: 'Space Mono', monospace;
+    width: 100%;
+    outline: none;
+    transition: border 0.2s;
+    direction: ltr;
+  }
+  .config-input:focus { border-color: var(--tt-cyan); }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  .stat-card {
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .stat-card:hover {
+    border-color: var(--tt-red);
+    transform: translateY(-2px);
+  }
+  .stat-num {
+    font-size: 20px;
+    font-weight: 900;
+    font-family: 'Space Mono', monospace;
+    color: var(--tt-red);
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--tt-muted);
+    margin-top: 2px;
+  }
+
+  /* Main action button */
+  .main-action-btn {
+    background: linear-gradient(135deg, var(--tt-red), #ff1744);
+    border: none;
+    border-radius: 18px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-size: 16px;
+    font-weight: 900;
+    color: white;
+    width: 100%;
+    transition: all 0.25s;
+    box-shadow: 0 8px 24px rgba(254,44,85,0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  .main-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    transition: left 0.5s;
+  }
+  .main-action-btn:hover::before { left: 100%; }
+  .main-action-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(254,44,85,0.5); }
+  .main-action-btn:active { transform: scale(0.98); }
+
+  /* Recent uploads */
+  .section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--tt-muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-title span { color: var(--tt-cyan); font-size: 12px; }
+
+  .history-item {
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 14px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+  }
+  .history-item:hover { border-color: var(--tt-border); background: #1a1a22; }
+  .history-thumb {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, var(--tt-red), var(--tt-cyan));
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .history-info { flex: 1; min-width: 0; }
+  .history-name {
+    font-size: 13px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .history-meta {
+    font-size: 11px;
+    color: var(--tt-muted);
+    margin-top: 2px;
+  }
+  .history-status {
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .status-ok { background: rgba(0,230,118,0.15); color: var(--tt-green); }
+  .status-pending { background: rgba(255,171,64,0.15); color: var(--tt-warn); }
+
+  /* ===== UPLOAD SCREEN ===== */
+  .upload-content {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed var(--tt-border);
+    border-radius: 20px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: rgba(255,255,255,0.02);
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--tt-red);
+    background: rgba(254,44,85,0.06);
+  }
+  .upload-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .upload-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .upload-zone h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .upload-zone p {
+    font-size: 11px;
+    color: var(--tt-muted);
+  }
+  .upload-zone .file-formats {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .format-tag {
+    padding: 3px 8px;
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 6px;
+    font-size: 10px;
+    color: var(--tt-cyan);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Video preview */
+  .video-preview-card {
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 18px;
+    overflow: hidden;
+    display: none;
+  }
+  .video-preview-card.show { display: block; }
+  .video-container {
+    width: 100%;
+    aspect-ratio: 9/16;
+    background: #000;
+    position: relative;
+    max-height: 320px;
+    overflow: hidden;
+  }
+  .video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .video-overlay-controls {
+    position: absolute;
+    bottom: 12px;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  .vid-ctrl-btn {
+    width: 36px; height: 36px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: white;
+    transition: all 0.2s;
+  }
+  .vid-ctrl-btn:hover { background: rgba(254,44,85,0.6); }
+  .video-info-bar {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .video-filename {
+    font-size: 13px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+  }
+  .video-size {
+    font-size: 11px;
+    color: var(--tt-muted);
+    font-family: 'Space Mono', monospace;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+  .change-video-btn {
+    padding: 5px 10px;
+    background: transparent;
+    border: 1px solid var(--tt-border);
+    border-radius: 8px;
+    color: var(--tt-muted);
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .change-video-btn:hover { border-color: var(--tt-red); color: var(--tt-red); }
+
+  /* AI Analysis section */
+  .ai-section {
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .ai-section-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--tt-border);
+  }
+  .ai-section-header h3 {
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ai-badge {
+    padding: 3px 8px;
+    background: linear-gradient(135deg, rgba(254,44,85,0.2), rgba(37,244,238,0.2));
+    border: 1px solid rgba(254,44,85,0.4);
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--tt-cyan);
+  }
+  .analyze-btn {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, rgba(37,244,238,0.2), rgba(37,244,238,0.1));
+    border: 1px solid var(--tt-cyan);
+    border-radius: 10px;
+    color: var(--tt-cyan);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    transition: all 0.2s;
+  }
+  .analyze-btn:hover { background: rgba(37,244,238,0.25); }
+  .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .ai-result {
+    padding: 14px 16px;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .ai-result.show { display: flex; }
+
+  .ai-loading {
+    padding: 20px;
+    text-align: center;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .ai-loading.show { display: flex; }
+  .ai-loader {
+    width: 36px; height: 36px;
+    border: 3px solid var(--tt-border);
+    border-top-color: var(--tt-cyan);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ai-loading p { font-size: 12px; color: var(--tt-muted); }
+
+  .caption-area {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--tt-border);
+    border-radius: 12px;
+    padding: 12px;
+    position: relative;
+  }
+  .caption-label {
+    font-size: 11px;
+    color: var(--tt-cyan);
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .copy-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--tt-muted);
+    padding: 2px 6px;
+    transition: color 0.2s;
+  }
+  .copy-btn:hover { color: var(--tt-cyan); }
+  .caption-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--tt-text);
+    resize: vertical;
+    min-height: 80px;
+    background: transparent;
+    border: none;
+    width: 100%;
+    outline: none;
+    font-family: 'Cairo', sans-serif;
+  }
+
+  .hashtags-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .hashtag {
+    padding: 4px 10px;
+    background: rgba(254,44,85,0.1);
+    border: 1px solid rgba(254,44,85,0.3);
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--tt-red);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+  }
+  .hashtag:hover {
+    background: rgba(254,44,85,0.2);
+    border-color: var(--tt-red);
+  }
+
+  .ai-meta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .ai-meta-item {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--tt-border);
+    border-radius: 10px;
+    padding: 8px 10px;
+  }
+  .ai-meta-item label {
+    font-size: 10px;
+    color: var(--tt-muted);
+    display: block;
+    margin-bottom: 3px;
+  }
+  .ai-meta-item span {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--tt-text);
+  }
+
+  /* TikTok post settings */
+  .post-settings {
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .settings-header {
+    padding: 14px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--tt-border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--tt-warn);
+  }
+  .settings-body {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .setting-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .setting-label {
+    font-size: 11px;
+    color: var(--tt-muted);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .setting-input {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--tt-border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--tt-text);
+    width: 100%;
+    outline: none;
+    transition: border 0.2s;
+    font-family: 'Cairo', sans-serif;
+  }
+  .setting-input:focus { border-color: var(--tt-warn); }
+  .setting-select {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--tt-border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--tt-text);
+    width: 100%;
+    outline: none;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    appearance: none;
+  }
+  .setting-select option { background: #1a1a22; }
+
+  /* Toggle */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-top: 1px solid var(--tt-border);
+  }
+  .toggle-label {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .toggle-sub {
+    font-size: 10px;
+    color: var(--tt-muted);
+    font-weight: 400;
+  }
+  .toggle {
+    width: 46px; height: 26px;
+    background: var(--tt-border);
+    border-radius: 13px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--tt-red); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    background: white;
+    border-radius: 50%;
+    top: 3px;
+    right: 3px;
+    transition: right 0.3s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .toggle.on::after { right: 23px; }
+
+  /* Best time chips */
+  .time-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .time-chip {
+    padding: 6px 12px;
+    background: rgba(37,244,238,0.1);
+    border: 1px solid rgba(37,244,238,0.2);
+    border-radius: 20px;
+    font-size: 11px;
+    color: var(--tt-cyan);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+  }
+  .time-chip:hover, .time-chip.selected {
+    background: rgba(37,244,238,0.25);
+    border-color: var(--tt-cyan);
+  }
+
+  /* Publish button */
+  .publish-btn {
+    background: linear-gradient(135deg, var(--tt-red), #c0003c);
+    border: none;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    font-family: 'Cairo', sans-serif;
+    font-size: 15px;
+    font-weight: 900;
+    color: white;
+    width: 100%;
+    transition: all 0.25s;
+    box-shadow: 0 6px 20px rgba(254,44,85,0.4);
+  }
+  .publish-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(254,44,85,0.5); }
+  .publish-btn:active { transform: scale(0.98); }
+  .publish-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ===== PROGRESS SCREEN ===== */
+  .progress-content {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    justify-content: center;
+    flex: 1;
+  }
+
+  .upload-animation {
+    width: 120px; height: 120px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .upload-ring {
+    position: absolute;
+    inset: 0;
+    border: 4px solid var(--tt-border);
+    border-radius: 50%;
+  }
+  .upload-progress-ring {
+    position: absolute;
+    inset: 0;
+    border: 4px solid transparent;
+    border-top-color: var(--tt-red);
+    border-right-color: var(--tt-cyan);
+    border-radius: 50%;
+    animation: spin 1.5s linear infinite;
+  }
+  .upload-center-icon {
+    font-size: 40px;
+    z-index: 1;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  .progress-title {
+    font-size: 20px;
+    font-weight: 900;
+    text-align: center;
+  }
+  .progress-subtitle {
+    font-size: 13px;
+    color: var(--tt-muted);
+    text-align: center;
+  }
+
+  .progress-bar-container {
+    width: 100%;
+    background: var(--tt-border);
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--tt-red), var(--tt-cyan));
+    border-radius: 10px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  .progress-steps {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .progress-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 12px;
+    transition: all 0.3s;
+  }
+  .progress-step.active { border-color: var(--tt-cyan); }
+  .progress-step.done { border-color: var(--tt-green); }
+  .step-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--tt-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+    transition: all 0.3s;
+  }
+  .progress-step.active .step-icon {
+    background: rgba(37,244,238,0.2);
+    border: 1px solid var(--tt-cyan);
+  }
+  .progress-step.done .step-icon {
+    background: rgba(0,230,118,0.2);
+    border: 1px solid var(--tt-green);
+  }
+  .step-text {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .step-status {
+    margin-right: auto;
+    font-size: 11px;
+    color: var(--tt-muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* ===== SUCCESS SCREEN ===== */
+  .success-content {
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    justify-content: center;
+    flex: 1;
+  }
+  .success-icon {
+    width: 100px; height: 100px;
+    background: linear-gradient(135deg, rgba(0,230,118,0.2), rgba(0,230,118,0.05));
+    border: 2px solid var(--tt-green);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 44px;
+    animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes successPop {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .success-title {
+    font-size: 22px;
+    font-weight: 900;
+    text-align: center;
+    color: var(--tt-green);
+  }
+  .success-subtitle {
+    font-size: 13px;
+    color: var(--tt-muted);
+    text-align: center;
+    line-height: 1.6;
+  }
+  .success-card {
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 16px;
+    padding: 16px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .success-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+  .success-row label { color: var(--tt-muted); }
+  .success-row span { font-weight: 700; font-family: 'Space Mono', monospace; font-size: 11px; }
+  .success-row span.ok { color: var(--tt-green); }
+
+  .done-btn {
+    background: linear-gradient(135deg, var(--tt-green), #00c853);
+    border: none;
+    border-radius: 16px;
+    padding: 15px;
+    width: 100%;
+    font-family: 'Cairo', sans-serif;
+    font-size: 15px;
+    font-weight: 900;
+    color: #0a0a0f;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 6px 20px rgba(0,230,118,0.3);
+  }
+  .done-btn:hover { transform: translateY(-2px); }
+
+  /* ===== BOTTOM NAV ===== */
+  .bottom-nav {
+    height: 72px;
+    background: rgba(13,13,18,0.98);
+    border-top: 1px solid var(--tt-border);
+    display: flex;
+    align-items: flex-start;
+    padding-top: 8px;
+    flex-shrink: 0;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 6px 0;
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    color: var(--tt-muted);
+    font-family: 'Cairo', sans-serif;
+  }
+  .nav-item.active { color: var(--tt-red); }
+  .nav-item:hover { color: var(--tt-text); }
+  .nav-icon { font-size: 20px; }
+  .nav-label { font-size: 10px; font-weight: 600; }
+  .nav-item.center .nav-icon-wrap {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--tt-red), var(--tt-cyan));
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-top: -14px;
+    box-shadow: 0 6px 16px rgba(254,44,85,0.4);
+  }
+
+  /* ===== NOTIFICATIONS ===== */
+  .toast {
+    position: absolute;
+    bottom: 80px;
+    left: 16px; right: 16px;
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 200;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+  }
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .toast.success { border-color: var(--tt-green); }
+  .toast.error { border-color: var(--tt-red); }
+  .toast-icon { font-size: 18px; }
+  .toast-text { font-size: 12px; font-weight: 600; }
+
+  /* Phone buttons */
+  .phone-btn {
+    position: absolute;
+    background: #1a1a28;
+    border: 1px solid #2a2a40;
+    border-radius: 4px;
+  }
+  .power-btn {
+    right: -3px; top: 160px;
+    width: 4px; height: 60px;
+  }
+  .vol-up {
+    left: -3px; top: 140px;
+    width: 4px; height: 40px;
+  }
+  .vol-dn {
+    left: -3px; top: 190px;
+    width: 4px; height: 40px;
+  }
+
+  /* Quality badge */
+  .quality-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: rgba(37,244,238,0.1);
+    border: 1px solid rgba(37,244,238,0.3);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--tt-cyan);
+  }
+
+  /* Algorithm tips */
+  .algo-tips {
+    background: linear-gradient(135deg, rgba(254,44,85,0.08), rgba(37,244,238,0.05));
+    border: 1px solid rgba(254,44,85,0.2);
+    border-radius: 14px;
+    padding: 14px;
+    display: none;
+  }
+  .algo-tips.show { display: block; }
+  .algo-tips h4 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--tt-red);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .algo-tip-item {
+    font-size: 11px;
+    color: var(--tt-text);
+    padding: 4px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    line-height: 1.5;
+  }
+  .algo-tip-item::before {
+    content: '▸';
+    color: var(--tt-cyan);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* Check animation */
+  .check-circle {
+    width: 20px; height: 20px;
+    background: rgba(0,230,118,0.2);
+    border: 1px solid var(--tt-green);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    animation: checkIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes checkIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+  }
+
+  /* Settings card */
+  .settings-card {
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .settings-item {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--tt-border);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .settings-item:last-child { border-bottom: none; }
+  .settings-item:hover { background: rgba(255,255,255,0.03); }
+  .settings-item-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  .settings-item-info { flex: 1; }
+  .settings-item-title { font-size: 13px; font-weight: 700; }
+  .settings-item-sub { font-size: 11px; color: var(--tt-muted); margin-top: 2px; }
+  .settings-item-arrow { color: var(--tt-muted); font-size: 12px; }
+
+  .connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+  @keyframes dotPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .dot.green { background: var(--tt-green); }
+  .dot.red { background: var(--tt-red); }
+  .dot.warn { background: var(--tt-warn); }
+
+  /* Home indicator */
+  .home-indicator {
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(13,13,18,0.98);
+  }
+  .home-bar {
+    width: 130px; height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+  }
+
+  .tip-card {
+    background: rgba(37,244,238,0.06);
+    border: 1px solid rgba(37,244,238,0.15);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 11px;
+    color: var(--tt-muted);
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    line-height: 1.5;
+  }
+  .tip-card .tip-icon { font-size: 14px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="desktop-wrapper">
+  <div class="phone-shell">
+    <!-- Physical buttons -->
+    <div class="phone-btn power-btn"></div>
+    <div class="phone-btn vol-up"></div>
+    <div class="phone-btn vol-dn"></div>
+
+    <!-- Notch -->
+    <div class="phone-notch">
+      <div class="notch-cam"></div>
+      <div class="notch-speaker"></div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="status-time" id="clock">00:00</span>
+      <div class="status-icons">
+        <span>●●●</span>
+        <span>WiFi</span>
+        <div class="battery-icon"><div class="battery-fill"></div></div>
+      </div>
+    </div>
+
+    <!-- Screen area -->
+    <div class="phone-screen">
+
+      <!-- ===== HOME SCREEN ===== -->
+      <div class="screen active" id="screen-home">
+        <div class="app-header">
+          <div class="logo">
+            <div class="tiktok-logo-icon">🎵</div>
+            <span class="app-title">TikTok Publisher</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div class="connection-status" id="conn-status">
+              <span class="dot warn" id="conn-dot"></span>
+              <span id="conn-text">جارٍ الفحص</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-content">
+          <div class="welcome-banner">
+            <h2>🚀 أهمد ماركتنج</h2>
+            <p>انشر ريلزك على TikTok بجودة عالية</p>
+          </div>
+
+          <!-- API Config -->
+          <div class="config-card">
+            <h3>⚙️ إعدادات API</h3>
+            <div class="config-row">
+              <div class="config-label">Gemini API Key</div>
+              <input type="password" class="config-input" id="gemini-key" placeholder="AIzaSy..." value="AIzaSyAt0NloyDpgEzHIpBqZwv0jpYbdiYX42P4">
+            </div>
+            <div class="config-row">
+              <div class="config-label">Upload-Post API Key</div>
+              <input type="password" class="config-input" id="upload-key" placeholder="Your Upload-Post API key...">
+            </div>
+            <div class="config-row">
+              <div class="config-label">اسم حساب TikTok (username في Upload-Post)</div>
+              <input type="text" class="config-input" id="tiktok-user" placeholder="hamod" value="hamod" style="direction:ltr">
+            </div>
+            <button onclick="testConnection()" style="background:rgba(37,244,238,0.15);border:1px solid var(--tt-cyan);border-radius:10px;padding:8px 14px;color:var(--tt-cyan);font-size:12px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif;width:100%;margin-top:4px;transition:all 0.2s">🔗 اختبار الاتصال</button>
+          </div>
+
+          <!-- Stats -->
+          <div class="stats-row">
+            <div class="stat-card" id="stat-uploads">
+              <div class="stat-num" id="stat-num-uploads">0</div>
+              <div class="stat-label">منشور</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num">✓</div>
+              <div class="stat-label">AI جاهز</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num">4K</div>
+              <div class="stat-label">جودة</div>
+            </div>
+          </div>
+
+          <!-- Main button -->
+          <button class="main-action-btn" onclick="goToScreen('screen-upload')">
+            <span style="font-size:20px">📹</span>
+            <span>انشر ريلز جديد</span>
+          </button>
+
+          <!-- Tips -->
+          <div class="tip-card">
+            <span class="tip-icon">💡</span>
+            <span>ارفع الفيديو بجودة عالية وسيقوم Gemini AI بتحليل المحتوى وكتابة الوصف والهاشتاقات المناسبة لخوارزمية TikTok تلقائياً</span>
+          </div>
+
+          <!-- Recent uploads -->
+          <div>
+            <div class="section-title">📊 آخر المنشورات <span id="history-count"></span></div>
+            <div id="history-list">
+              <div style="text-align:center;padding:20px;color:var(--tt-muted);font-size:12px">
+                لم تنشر بعد — ابدأ الآن! 🎵
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== UPLOAD SCREEN ===== -->
+      <div class="screen" id="screen-upload">
+        <div class="app-header">
+          <button class="back-btn" onclick="goToScreen('screen-home')">←</button>
+          <span style="font-size:14px;font-weight:900">نشر فيديو جديد</span>
+          <div class="quality-badge">🎬 HD</div>
+        </div>
+
+        <div class="upload-content">
+          <!-- Upload zone -->
+          <div class="upload-zone" id="upload-zone">
+            <input type="file" id="video-file-input" accept="video/*" onchange="handleVideoSelect(this)">
+            <span class="upload-icon">🎥</span>
+            <h3>اختر فيديو الريلز</h3>
+            <p>اسحب وأفلت أو انقر للاختيار</p>
+            <div class="file-formats">
+              <span class="format-tag">MP4</span>
+              <span class="format-tag">MOV</span>
+              <span class="format-tag">AVI</span>
+              <span class="format-tag">MAX 500MB</span>
+            </div>
+          </div>
+
+          <!-- Video preview -->
+          <div class="video-preview-card" id="video-preview-card">
+            <div class="video-container">
+              <video id="preview-video" controls playsinline></video>
+              <div class="video-overlay-controls">
+                <div class="vid-ctrl-btn" onclick="document.getElementById('preview-video').play()">▶</div>
+                <div class="vid-ctrl-btn" onclick="document.getElementById('preview-video').pause()">⏸</div>
+                <div class="vid-ctrl-btn" onclick="document.getElementById('preview-video').currentTime=0">⏮</div>
+              </div>
+            </div>
+            <div class="video-info-bar">
+              <span class="video-filename" id="video-filename">-</span>
+              <span class="video-size" id="video-size">-</span>
+              <button class="change-video-btn" onclick="changeVideo()">تغيير</button>
+            </div>
+          </div>
+
+          <!-- AI Analysis -->
+          <div class="ai-section">
+            <div class="ai-section-header">
+              <h3>🤖 تحليل الذكاء الاصطناعي <span class="ai-badge">Gemini</span></h3>
+              <button class="analyze-btn" id="analyze-btn" onclick="analyzeVideo()" disabled>تحليل</button>
+            </div>
+
+            <div class="ai-loading" id="ai-loading">
+              <div class="ai-loader"></div>
+              <p id="ai-loading-text">Gemini يحلل الفيديو...</p>
+            </div>
+
+            <div class="ai-result" id="ai-result">
+              <div class="caption-area">
+                <div class="caption-label">
+                  <span>📝 الوصف</span>
+                  <button class="copy-btn" onclick="copyCaption()">📋 نسخ</button>
+                </div>
+                <textarea class="caption-text" id="caption-text" placeholder="سيظهر الوصف هنا بعد التحليل..."></textarea>
+              </div>
+
+              <div>
+                <div class="caption-label" style="margin-bottom:8px">🏷️ الهاشتاقات</div>
+                <div class="hashtags-area" id="hashtags-area"></div>
+              </div>
+
+              <div class="ai-meta-row">
+                <div class="ai-meta-item">
+                  <label>الفئة المقترحة</label>
+                  <span id="ai-category">-</span>
+                </div>
+                <div class="ai-meta-item">
+                  <label>وقت النشر المثالي</label>
+                  <span id="ai-best-time">-</span>
+                </div>
+              </div>
+
+              <div class="algo-tips show" id="algo-tips">
+                <h4>⚡ نصائح خوارزمية TikTok</h4>
+                <div id="algo-tips-list"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Post settings -->
+          <div class="post-settings">
+            <div class="settings-header">🎯 إعدادات المنشور</div>
+            <div class="settings-body">
+              <div class="setting-row">
+                <div class="setting-label">📌 عنوان الفيديو (للـ TikTok)</div>
+                <input type="text" class="setting-input" id="post-title" placeholder="أدخل عنوان مميز...">
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label">🕐 أفضل أوقات النشر</div>
+                <div class="time-chips">
+                  <div class="time-chip" onclick="selectTime(this, '09:00')">9:00 ص</div>
+                  <div class="time-chip" onclick="selectTime(this, '13:00')">1:00 م</div>
+                  <div class="time-chip selected" onclick="selectTime(this, '19:00')">7:00 م</div>
+                  <div class="time-chip" onclick="selectTime(this, '21:00')">9:00 م</div>
+                  <div class="time-chip" onclick="selectTime(this, '23:00')">11:00 م</div>
+                </div>
+              </div>
+
+              <div class="setting-row">
+                <div class="setting-label">👥 الخصوصية</div>
+                <select class="setting-select" id="privacy-setting">
+                  <option value="public_to_everyone">🌍 عام للجميع</option>
+                  <option value="mutual_follow_friends">👥 الأصدقاء فقط</option>
+                  <option value="self_only">🔒 أنا فقط</option>
+                </select>
+              </div>
+
+              <div class="toggle-row">
+                <div class="toggle-label">
+                  تعليقات
+                  <span class="toggle-sub">السماح بالتعليقات</span>
+                </div>
+                <div class="toggle on" id="toggle-comments" onclick="this.classList.toggle('on')"></div>
+              </div>
+
+              <div class="toggle-row">
+                <div class="toggle-label">
+                  الديويت والستيتش
+                  <span class="toggle-sub">السماح للآخرين بالمشاركة</span>
+                </div>
+                <div class="toggle on" id="toggle-duet" onclick="this.classList.toggle('on')"></div>
+              </div>
+
+              <div class="toggle-row">
+                <div class="toggle-label">
+                  🎵 إضافة صوت ترند
+                  <span class="toggle-sub">يزيد من الانتشار</span>
+                </div>
+                <div class="toggle" id="toggle-sound" onclick="this.classList.toggle('on')"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Publish button -->
+          <button class="publish-btn" id="publish-btn" onclick="startPublish()" disabled>
+            🚀 نشر على TikTok الآن
+          </button>
+
+          <div style="height:10px"></div>
+        </div>
+      </div>
+
+      <!-- ===== PROGRESS SCREEN ===== -->
+      <div class="screen" id="screen-progress">
+        <div class="app-header">
+          <div></div>
+          <span style="font-size:14px;font-weight:900">جارٍ النشر...</span>
+          <div></div>
+        </div>
+
+        <div class="progress-content">
+          <div class="upload-animation">
+            <div class="upload-ring"></div>
+            <div class="upload-progress-ring" id="progress-spinner"></div>
+            <div class="upload-center-icon" id="progress-icon">📤</div>
+          </div>
+
+          <div>
+            <div class="progress-title" id="progress-title">يتم رفع الفيديو</div>
+            <div class="progress-subtitle" id="progress-subtitle">الرجاء الانتظار...</div>
+          </div>
+
+          <div style="width:100%">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tt-muted);margin-bottom:6px">
+              <span>التقدم</span>
+              <span id="progress-pct">0%</span>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="progress-fill"></div>
+            </div>
+          </div>
+
+          <div class="progress-steps">
+            <div class="progress-step" id="step-1">
+              <div class="step-icon">1</div>
+              <div class="step-text">تحضير الفيديو</div>
+              <div class="step-status" id="step-1-status">انتظار</div>
+            </div>
+            <div class="progress-step" id="step-2">
+              <div class="step-icon">2</div>
+              <div class="step-text">رفع إلى السيرفر</div>
+              <div class="step-status" id="step-2-status">انتظار</div>
+            </div>
+            <div class="progress-step" id="step-3">
+              <div class="step-icon">3</div>
+              <div class="step-text">النشر على TikTok</div>
+              <div class="step-status" id="step-3-status">انتظار</div>
+            </div>
+            <div class="progress-step" id="step-4">
+              <div class="step-icon">4</div>
+              <div class="step-text">التحقق من النشر</div>
+              <div class="step-status" id="step-4-status">انتظار</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SUCCESS SCREEN ===== -->
+      <div class="screen" id="screen-success">
+        <div class="app-header">
+          <div></div>
+          <span style="font-size:14px;font-weight:900">تم النشر! 🎉</span>
+          <div></div>
+        </div>
+
+        <div class="success-content">
+          <div class="success-icon">✅</div>
+          <div class="success-title">تم النشر بنجاح!</div>
+          <div class="success-subtitle" id="success-msg">تم نشر الفيديو على TikTok بجودة عالية</div>
+
+          <div class="success-card">
+            <div class="success-row">
+              <label>المنصة</label>
+              <span class="ok">TikTok ✓</span>
+            </div>
+            <div class="success-row">
+              <label>الجودة</label>
+              <span class="ok">عالية ✓</span>
+            </div>
+            <div class="success-row">
+              <label>request_id</label>
+              <span id="success-request-id" style="font-size:10px;word-break:break-all">-</span>
+            </div>
+            <div class="success-row">
+              <label>وقت النشر</label>
+              <span id="success-time">-</span>
+            </div>
+          </div>
+
+          <button class="done-btn" onclick="resetAndGoHome()">
+            🏠 العودة للرئيسية
+          </button>
+          <button onclick="goToScreen('screen-upload')" style="background:transparent;border:1px solid var(--tt-border);border-radius:14px;padding:12px;width:100%;font-family:'Cairo',sans-serif;font-size:14px;font-weight:700;color:var(--tt-muted);cursor:pointer;transition:all 0.2s">
+            ➕ نشر فيديو آخر
+          </button>
+        </div>
+      </div>
+
+      <!-- ===== SETTINGS SCREEN ===== -->
+      <div class="screen" id="screen-settings">
+        <div class="app-header">
+          <div class="logo">
+            <span style="font-size:16px">⚙️</span>
+            <span class="app-title">الإعدادات</span>
+          </div>
+          <div></div>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+          <div class="settings-card">
+            <div class="settings-item" onclick="goToScreen('screen-home')">
+              <div class="settings-item-icon" style="background:rgba(254,44,85,0.15)">🔑</div>
+              <div class="settings-item-info">
+                <div class="settings-item-title">مفاتيح API</div>
+                <div class="settings-item-sub">Gemini & Upload-Post</div>
+              </div>
+              <span class="settings-item-arrow">›</span>
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-icon" style="background:rgba(37,244,238,0.15)">🎵</div>
+              <div class="settings-item-info">
+                <div class="settings-item-title">حساب TikTok</div>
+                <div class="settings-item-sub" id="settings-tiktok-user">@hamod</div>
+              </div>
+              <div class="connection-status"><span class="dot green"></span></div>
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-icon" style="background:rgba(255,171,64,0.15)">📊</div>
+              <div class="settings-item-info">
+                <div class="settings-item-title">سجل المنشورات</div>
+                <div class="settings-item-sub" id="settings-history-count">0 منشور</div>
+              </div>
+              <span class="settings-item-arrow">›</span>
+            </div>
+            <div class="settings-item" onclick="clearHistory()">
+              <div class="settings-item-icon" style="background:rgba(254,44,85,0.1)">🗑️</div>
+              <div class="settings-item-info">
+                <div class="settings-item-title">مسح السجل</div>
+                <div class="settings-item-sub">مسح جميع المنشورات المحفوظة محلياً</div>
+              </div>
+              <span class="settings-item-arrow">›</span>
+            </div>
+          </div>
+
+          <div style="background:var(--tt-card);border:1px solid var(--tt-border);border-radius:16px;padding:16px;font-size:11px;color:var(--tt-muted);line-height:1.6">
+            <div style="font-weight:700;color:var(--tt-text);margin-bottom:6px">🎯 Ahmed Marketing</div>
+            TikTok Publisher v2.0<br>
+            Powered by Gemini AI + Upload-Post API<br>
+            <span style="color:var(--tt-cyan)">ahmedmarketing.cloud</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast notification -->
+      <div class="toast" id="toast">
+        <span class="toast-icon" id="toast-icon">ℹ️</span>
+        <span class="toast-text" id="toast-text"></span>
+      </div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <button class="nav-item active" id="nav-home" onclick="goToScreen('screen-home');setActiveNav('nav-home')">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">الرئيسية</span>
+      </button>
+      <button class="nav-item" id="nav-upload" onclick="goToScreen('screen-upload');setActiveNav('nav-upload')">
+        <span class="nav-icon">📹</span>
+        <span class="nav-label">نشر</span>
+      </button>
+      <button class="nav-item center" onclick="goToScreen('screen-upload');setActiveNav('nav-upload')">
+        <div class="nav-icon-wrap">➕</div>
+      </button>
+      <button class="nav-item" id="nav-history" onclick="goToScreen('screen-home');setActiveNav('nav-home')">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">السجل</span>
+      </button>
+      <button class="nav-item" id="nav-settings" onclick="goToScreen('screen-settings');setActiveNav('nav-settings')">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">الإعدادات</span>
+      </button>
+    </div>
+
+    <!-- Home indicator -->
+    <div class="home-indicator"><div class="home-bar"></div></div>
+  </div>
+</div>
+
+<script>
+// ========== STATE ==========
+let currentVideo = null;
+let videoFile = null;
+let selectedTime = '19:00';
+let uploadHistory = JSON.parse(localStorage.getItem('tt_history') || '[]');
+
+// ========== CLOCK ==========
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clock').textContent = h + ':' + m;
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// ========== SCREEN NAV ==========
+let currentScreen = 'screen-home';
+function goToScreen(id) {
+  const prev = document.getElementById(currentScreen);
+  const next = document.getElementById(id);
+  if (prev === next) return;
+  prev.classList.add('slide-left');
+  prev.classList.remove('active');
+  setTimeout(() => prev.classList.remove('slide-left'), 400);
+  next.style.transform = 'translateX(30px)';
+  next.classList.add('active');
+  setTimeout(() => next.style.transform = '', 10);
+  currentScreen = id;
+  updateSettings();
+}
+function setActiveNav(id) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+// ========== TOAST ==========
+function showToast(msg, type='info') {
+  const toast = document.getElementById('toast');
+  const icons = { success:'✅', error:'❌', info:'ℹ️', warn:'⚠️' };
+  document.getElementById('toast-icon').textContent = icons[type] || 'ℹ️';
+  document.getElementById('toast-text').textContent = msg;
+  toast.className = 'toast ' + type + ' show';
+  setTimeout(() => toast.classList.remove('show'), 3500);
+}
+
+// ========== CONNECTION TEST ==========
+async function testConnection() {
+  const uploadKey = document.getElementById('upload-key').value.trim();
+  document.getElementById('conn-dot').className = 'dot warn';
+  document.getElementById('conn-text').textContent = 'يتحقق...';
+
+  if (!uploadKey) {
+    showToast('أدخل Upload-Post API Key أولاً', 'warn');
+    document.getElementById('conn-dot').className = 'dot red';
+    document.getElementById('conn-text').textContent = 'غير مُعدّ';
+    return;
+  }
+
+  try {
+    const res = await fetch('https://api.upload-post.com/api/uploadposts/me', {
+      headers: { 'Authorization': 'Apikey ' + uploadKey }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      document.getElementById('conn-dot').className = 'dot green';
+      document.getElementById('conn-text').textContent = 'متصل ✓';
+      showToast('الاتصال ناجح! ' + (data.email || ''), 'success');
+    } else {
+      throw new Error('HTTP ' + res.status);
+    }
+  } catch(e) {
+    document.getElementById('conn-dot').className = 'dot red';
+    document.getElementById('conn-text').textContent = 'خطأ في المفتاح';
+    showToast('تحقق من Upload-Post API Key', 'error');
+  }
+}
+
+// ========== VIDEO SELECT ==========
+function handleVideoSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  if (file.size > 500 * 1024 * 1024) {
+    showToast('الفيديو أكبر من 500MB', 'error');
+    return;
+  }
+
+  videoFile = file;
+  const url = URL.createObjectURL(file);
+  document.getElementById('preview-video').src = url;
+  document.getElementById('video-filename').textContent = file.name;
+  document.getElementById('video-size').textContent = formatSize(file.size);
+
+  document.getElementById('video-preview-card').classList.add('show');
+  document.getElementById('upload-zone').style.display = 'none';
+
+  document.getElementById('analyze-btn').disabled = false;
+  document.getElementById('post-title').value = file.name.replace(/\.[^.]+$/, '');
+
+  showToast('تم تحميل الفيديو! اضغط تحليل الآن 🎬', 'success');
+}
+
+function changeVideo() {
+  videoFile = null;
+  document.getElementById('preview-video').src = '';
+  document.getElementById('video-preview-card').classList.remove('show');
+  document.getElementById('upload-zone').style.display = 'block';
+  document.getElementById('video-file-input').value = '';
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('publish-btn').disabled = true;
+  document.getElementById('ai-result').classList.remove('show');
+  document.getElementById('ai-loading').classList.remove('show');
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+// ========== AI ANALYSIS (Gemini) ==========
+async function analyzeVideo() {
+  const geminiKey = document.getElementById('gemini-key').value.trim();
+  if (!geminiKey) { showToast('أدخل Gemini API Key', 'warn'); return; }
+  if (!videoFile) { showToast('اختر فيديو أولاً', 'warn'); return; }
+
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳';
+
+  document.getElementById('ai-loading').classList.add('show');
+  document.getElementById('ai-result').classList.remove('show');
+
+  // Convert first frame to base64 for Gemini analysis
+  try {
+    document.getElementById('ai-loading-text').textContent = 'استخراج بيانات الفيديو...';
+
+    // Extract thumbnail from video
+    const thumbnailBase64 = await extractVideoThumbnail(videoFile);
+
+    document.getElementById('ai-loading-text').textContent = 'Gemini يحلل المحتوى...';
+
+    // Call Gemini API with video thumbnail + metadata
+    const videoInfo = `
+اسم الفيديو: ${videoFile.name}
+حجم الفيديو: ${formatSize(videoFile.size)}
+نوع الملف: ${videoFile.type}
+`;
+
+    const prompt = `أنت خبير محتوى TikTok متخصص في تحسين خوارزمية TikTok للجمهور العربي العراقي.
+
+معلومات الفيديو:
+${videoInfo}
+
+بناءً على الصورة المرفوعة (إطار من الفيديو) ومعلومات الفيديو، قم بالتحليل وأعط الإجابة بهذا الـ JSON فقط بدون أي نص إضافي:
+{
+  "caption": "وصف احترافي جذاب للـ TikTok باللغة العربية (2-3 جمل)، يجذب المشاهدين ويشجع على التفاعل",
+  "hashtags": ["هاشتاق1", "هاشتاق2", "هاشتاق3", "هاشتاق4", "هاشتاق5", "هاشتاق6", "هاشتاق7", "هاشتاق8"],
+  "category": "الفئة مثل: ترفيه، تعليم، رياضة، طبخ، موسيقى، إلخ",
+  "best_time": "الوقت المثالي للنشر مثل: 7 م - 9 م",
+  "algo_tips": [
+    "نصيحة 1 لتحسين الوصول على TikTok",
+    "نصيحة 2",
+    "نصيحة 3"
+  ]
+}`;
+
+    let requestBody;
+    if (thumbnailBase64) {
+      requestBody = {
+        contents: [{
+          parts: [
+            { inline_data: { mime_type: 'image/jpeg', data: thumbnailBase64 } },
+            { text: prompt }
+          ]
+        }]
+      };
+    } else {
+      requestBody = {
+        contents: [{ parts: [{ text: prompt + '\n\n(لا توجد صورة مرفقة، قم بالتحليل بناءً على المعلومات المتاحة)' }] }]
+      };
+    }
+
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      }
+    );
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error?.message || 'خطأ في Gemini API');
+    }
+
+    const data = await res.json();
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('لم يتمكن Gemini من تحليل الفيديو');
+
+    const analysis = JSON.parse(jsonMatch[0]);
+    displayAnalysis(analysis);
+
+  } catch(e) {
+    document.getElementById('ai-loading').classList.remove('show');
+    showToast('خطأ: ' + e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'تحليل';
+    return;
+  }
+
+  btn.textContent = '✓ تم';
+  setTimeout(() => { btn.disabled = false; btn.textContent = 'إعادة'; }, 2000);
+}
+
+async function extractVideoThumbnail(file) {
+  return new Promise((resolve) => {
+    try {
+      const video = document.createElement('video');
+      const url = URL.createObjectURL(file);
+      video.src = url;
+      video.crossOrigin = 'anonymous';
+      video.currentTime = 1;
+      video.onloadeddata = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 480;
+        canvas.height = 854;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+        URL.revokeObjectURL(url);
+        resolve(base64);
+      };
+      video.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+      setTimeout(() => resolve(null), 5000);
+    } catch(e) { resolve(null); }
+  });
+}
+
+function displayAnalysis(analysis) {
+  document.getElementById('ai-loading').classList.remove('show');
+  document.getElementById('ai-result').classList.add('show');
+
+  // Caption
+  if (analysis.caption) {
+    document.getElementById('caption-text').value = analysis.caption;
+    if (!document.getElementById('post-title').value || document.getElementById('post-title').value === videoFile?.name?.replace(/\.[^.]+$/,'')) {
+      document.getElementById('post-title').value = analysis.caption.substring(0, 60);
+    }
+  }
+
+  // Hashtags
+  const hashEl = document.getElementById('hashtags-area');
+  hashEl.innerHTML = '';
+  if (analysis.hashtags) {
+    analysis.hashtags.forEach(tag => {
+      const el = document.createElement('div');
+      el.className = 'hashtag';
+      el.textContent = tag.startsWith('#') ? tag : '#' + tag;
+      el.onclick = () => {
+        const txt = document.getElementById('caption-text');
+        txt.value += ' ' + el.textContent;
+      };
+      hashEl.appendChild(el);
+    });
+  }
+
+  // Meta
+  if (analysis.category) document.getElementById('ai-category').textContent = analysis.category;
+  if (analysis.best_time) document.getElementById('ai-best-time').textContent = analysis.best_time;
+
+  // Algo tips
+  if (analysis.algo_tips) {
+    const tipsList = document.getElementById('algo-tips-list');
+    tipsList.innerHTML = '';
+    analysis.algo_tips.forEach(tip => {
+      const el = document.createElement('div');
+      el.className = 'algo-tip-item';
+      el.textContent = tip;
+      tipsList.appendChild(el);
+    });
+  }
+
+  document.getElementById('publish-btn').disabled = false;
+  showToast('✨ تم تحليل الفيديو بنجاح!', 'success');
+}
+
+function copyCaption() {
+  const txt = document.getElementById('caption-text').value;
+  const tags = Array.from(document.querySelectorAll('.hashtag')).map(h => h.textContent).join(' ');
+  navigator.clipboard.writeText(txt + '\n\n' + tags).then(() => showToast('تم النسخ! 📋', 'success'));
+}
+
+// ========== BEST TIME SELECTION ==========
+function selectTime(el, time) {
+  document.querySelectorAll('.time-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTime = time;
+}
+
+// ========== PUBLISH ==========
+async function startPublish() {
+  const uploadKey = document.getElementById('upload-key').value.trim();
+  const tiktokUser = document.getElementById('tiktok-user').value.trim();
+  const title = document.getElementById('post-title').value.trim();
+  const caption = document.getElementById('caption-text').value.trim();
+  const hashtags = Array.from(document.querySelectorAll('.hashtag')).map(h => h.textContent).join(' ');
+
+  if (!uploadKey) { showToast('أدخل Upload-Post API Key في الإعدادات', 'error'); return; }
+  if (!tiktokUser) { showToast('أدخل اسم حساب TikTok', 'error'); return; }
+  if (!videoFile) { showToast('لم يتم اختيار فيديو', 'error'); return; }
+  if (!title) { showToast('أدخل عنوان الفيديو', 'warn'); return; }
+
+  goToScreen('screen-progress');
+
+  const steps = [
+    { id: 'step-1', label: 'تحضير الفيديو', statusId: 'step-1-status' },
+    { id: 'step-2', label: 'رفع إلى السيرفر', statusId: 'step-2-status' },
+    { id: 'step-3', label: 'النشر على TikTok', statusId: 'step-3-status' },
+    { id: 'step-4', label: 'التحقق من النشر', statusId: 'step-4-status' },
+  ];
+
+  async function activateStep(i, statusText) {
+    if (i > 0) {
+      const prev = document.getElementById(steps[i-1].id);
+      prev.classList.remove('active');
+      prev.classList.add('done');
+      document.getElementById(steps[i-1].statusId).textContent = '✓';
+      document.getElementById(steps[i-1].id).querySelector('.step-icon').innerHTML = '<span class="check-circle">✓</span>';
+    }
+    const el = document.getElementById(steps[i].id);
+    el.classList.add('active');
+    document.getElementById(steps[i].statusId).textContent = statusText;
+    const pct = ((i+1)/steps.length * 100);
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-pct').textContent = Math.round(pct) + '%';
+    await new Promise(r => setTimeout(r, 800));
+  }
+
+  try {
+    // Step 1: Prepare
+    document.getElementById('progress-title').textContent = 'تحضير الفيديو';
+    document.getElementById('progress-subtitle').textContent = videoFile.name;
+    await activateStep(0, 'جارٍ...');
+
+    const fullCaption = caption + (hashtags ? '\n' + hashtags : '');
+
+    // Step 2: Upload
+    document.getElementById('progress-title').textContent = 'رفع الفيديو';
+    document.getElementById('progress-subtitle').textContent = formatSize(videoFile.size) + ' — جودة عالية';
+    await activateStep(1, 'جارٍ...');
+
+    const formData = new FormData();
+    formData.append('video', videoFile);
+    formData.append('title', title);
+    formData.append('description', fullCaption);
+    formData.append('user', tiktokUser);
+    formData.append('platform[]', 'tiktok');
+
+    // Privacy setting
+    const privacy = document.getElementById('privacy-setting').value;
+    if (privacy) formData.append('privacy_level', privacy);
+
+    // Comments toggle
+    const commentsOn = document.getElementById('toggle-comments').classList.contains('on');
+    formData.append('comment_disabled', commentsOn ? 'false' : 'true');
+
+    // Duet/Stitch
+    const duetOn = document.getElementById('toggle-duet').classList.contains('on');
+    formData.append('duet_disabled', duetOn ? 'false' : 'true');
+    formData.append('stitch_disabled', duetOn ? 'false' : 'true');
+
+    const uploadRes = await fetch('https://api.upload-post.com/api/upload', {
+      method: 'POST',
+      headers: { 'Authorization': 'Apikey ' + uploadKey },
+      body: formData
+    });
+
+    const uploadData = await uploadRes.json();
+
+    if (!uploadRes.ok) {
+      throw new Error(uploadData.message || uploadData.error || 'فشل الرفع: ' + uploadRes.status);
+    }
+
+    // Step 3: Publish confirmation
+    document.getElementById('progress-title').textContent = 'يتم النشر على TikTok';
+    document.getElementById('progress-subtitle').textContent = '@' + tiktokUser;
+    await activateStep(2, 'جارٍ...');
+
+    const requestId = uploadData.request_id || uploadData.id || uploadData.data?.request_id || 'unknown';
+
+    // Step 4: Verify
+    document.getElementById('progress-title').textContent = 'تأكيد النشر';
+    document.getElementById('progress-subtitle').textContent = 'request_id: ' + requestId;
+    await activateStep(3, 'جارٍ...');
+
+    // Mark last step done
+    const last = document.getElementById(steps[3].id);
+    last.classList.remove('active');
+    last.classList.add('done');
+    document.getElementById(steps[3].statusId).textContent = '✓';
+    last.querySelector('.step-icon').innerHTML = '<span class="check-circle">✓</span>';
+    document.getElementById('progress-fill').style.width = '100%';
+    document.getElementById('progress-pct').textContent = '100%';
+    document.getElementById('progress-icon').textContent = '🎉';
+
+    // Save to history
+    const historyItem = {
+      id: requestId,
+      filename: videoFile.name,
+      title: title,
+      time: new Date().toLocaleString('ar-IQ'),
+      status: 'published',
+      platform: 'TikTok'
+    };
+    uploadHistory.unshift(historyItem);
+    if (uploadHistory.length > 20) uploadHistory.pop();
+    localStorage.setItem('tt_history', JSON.stringify(uploadHistory));
+    document.getElementById('stat-num-uploads').textContent = uploadHistory.length;
+
+    await new Promise(r => setTimeout(r, 800));
+
+    // Go to success
+    document.getElementById('success-request-id').textContent = requestId;
+    document.getElementById('success-time').textContent = new Date().toLocaleString('ar-IQ');
+    document.getElementById('success-msg').textContent = `تم نشر "${title}" على TikTok بنجاح! 🎵`;
+
+    renderHistory();
+    goToScreen('screen-success');
+
+  } catch(e) {
+    document.getElementById('progress-icon').textContent = '❌';
+    document.getElementById('progress-title').textContent = 'حدث خطأ';
+    document.getElementById('progress-subtitle').textContent = e.message;
+    document.getElementById('progress-spinner').style.animationPlayState = 'paused';
+    document.getElementById('progress-spinner').style.borderTopColor = 'var(--tt-red)';
+    document.getElementById('progress-spinner').style.borderRightColor = 'var(--tt-red)';
+    showToast('خطأ: ' + e.message, 'error');
+
+    setTimeout(() => {
+      goToScreen('screen-upload');
+    }, 4000);
+  }
+}
+
+// ========== HISTORY ==========
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const count = document.getElementById('history-count');
+  count.textContent = uploadHistory.length ? '(' + uploadHistory.length + ')' : '';
+  document.getElementById('stat-num-uploads').textContent = uploadHistory.length;
+
+  if (!uploadHistory.length) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--tt-muted);font-size:12px">لم تنشر بعد — ابدأ الآن! 🎵</div>';
+    return;
+  }
+
+  list.innerHTML = uploadHistory.map(item => `
+    <div class="history-item">
+      <div class="history-thumb">🎵</div>
+      <div class="history-info">
+        <div class="history-name">${item.title || item.filename}</div>
+        <div class="history-meta">${item.platform} • ${item.time}</div>
+      </div>
+      <div class="history-status ${item.status === 'published' ? 'status-ok' : 'status-pending'}">
+        ${item.status === 'published' ? 'نُشر ✓' : 'معلق'}
+      </div>
+    </div>
+  `).join('');
+}
+
+function clearHistory() {
+  if (confirm('مسح جميع السجلات؟')) {
+    uploadHistory = [];
+    localStorage.removeItem('tt_history');
+    renderHistory();
+    showToast('تم مسح السجل', 'info');
+  }
+}
+
+function resetAndGoHome() {
+  videoFile = null;
+  document.getElementById('preview-video').src = '';
+  document.getElementById('video-preview-card').classList.remove('show');
+  document.getElementById('upload-zone').style.display = 'block';
+  document.getElementById('video-file-input').value = '';
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('publish-btn').disabled = true;
+  document.getElementById('ai-result').classList.remove('show');
+  document.getElementById('ai-loading').classList.remove('show');
+  document.getElementById('caption-text').value = '';
+  document.getElementById('hashtags-area').innerHTML = '';
+  document.getElementById('post-title').value = '';
+  document.getElementById('analyze-btn').textContent = 'تحليل';
+  goToScreen('screen-home');
+  setActiveNav('nav-home');
+}
+
+function updateSettings() {
+  const user = document.getElementById('tiktok-user')?.value || 'hamod';
+  const settingsEl = document.getElementById('settings-tiktok-user');
+  if (settingsEl) settingsEl.textContent = '@' + user;
+  const histEl = document.getElementById('settings-history-count');
+  if (histEl) histEl.textContent = uploadHistory.length + ' منشور';
+}
+
+// ========== DRAG & DROP ==========
+const zone = document.getElementById('upload-zone');
+if (zone) {
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('video/')) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.getElementById('video-file-input').files = dt.files;
+      handleVideoSelect(document.getElementById('video-file-input'));
+    }
+  });
+}
+
+// ========== INIT ==========
+renderHistory();
+updateSettings();
+
+// Auto-check connection on load if key exists
+setTimeout(() => {
+  const uploadKey = document.getElementById('upload-key').value.trim();
+  if (!uploadKey) {
+    document.getElementById('conn-dot').className = 'dot warn';
+    document.getElementById('conn-text').textContent = 'أدخل API Key';
+  }
+}, 500);
+</script>
+</body>
+</html>
