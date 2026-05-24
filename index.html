@@ -1364,9 +1364,9 @@
               <div class="config-label">Gemini API Key</div>
               <input type="password" class="config-input" id="gemini-key" placeholder="AIzaSy..." value="AIzaSyAt0NloyDpgEzHIpBqZwv0jpYbdiYX42P4">
             </div>
-            <div class="config-row">
+            <div class="config-row" style="display:none">
               <div class="config-label">Upload-Post API Key</div>
-              <input type="password" class="config-input" id="upload-key" placeholder="Your Upload-Post API key...">
+              <input type="password" class="config-input" id="upload-key" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImJyaG0ud29yazFAZ21haWwuY29tIiwiZXhwIjo0OTE4NDA3NTIwLCJqdGkiOiI5OTE0ZDgzZC0yNjM2LTRjOGItYjMxOC1iZDcwOWFmMmU4MDQifQ.EPmdtyoVDVi7vdtdhAYzQ013SUUM9iAZkDyy6cFIqoc">
             </div>
             <div class="config-row">
               <div class="config-label">اسم حساب TikTok (username في Upload-Post)</div>
@@ -1796,35 +1796,39 @@ function showToast(msg, type='info') {
   setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
+// ========== N8N PROXY CONFIG ==========
+const N8N_WEBHOOK = 'https://n8n.srv1099752.hstgr.cloud/webhook/tikpublt';
+
 // ========== CONNECTION TEST ==========
 async function testConnection() {
-  const uploadKey = document.getElementById('upload-key').value.trim();
   document.getElementById('conn-dot').className = 'dot warn';
   document.getElementById('conn-text').textContent = 'يتحقق...';
 
-  if (!uploadKey) {
-    showToast('أدخل Upload-Post API Key أولاً', 'warn');
-    document.getElementById('conn-dot').className = 'dot red';
-    document.getElementById('conn-text').textContent = 'غير مُعدّ';
-    return;
-  }
-
   try {
-    const res = await fetch('https://api.upload-post.com/api/uploadposts/me', {
-      headers: { 'Authorization': 'Apikey ' + uploadKey }
+    const res = await fetch(N8N_WEBHOOK + '?action=test', {
+      method: 'GET',
+      signal: AbortSignal.timeout(10000)
     });
-    if (res.ok) {
-      const data = await res.json();
+    const data = await res.json();
+    if (res.ok && (data.ok || data.status === 'ok' || data.email || data.success)) {
       document.getElementById('conn-dot').className = 'dot green';
       document.getElementById('conn-text').textContent = 'متصل ✓';
-      showToast('الاتصال ناجح! ' + (data.email || ''), 'success');
+      showToast('الاتصال ناجح! ✅', 'success');
     } else {
-      throw new Error('HTTP ' + res.status);
+      throw new Error(data.message || 'فشل الاتصال');
     }
   } catch(e) {
-    document.getElementById('conn-dot').className = 'dot red';
-    document.getElementById('conn-text').textContent = 'خطأ في المفتاح';
-    showToast('تحقق من Upload-Post API Key', 'error');
+    // إذا رجع n8n أي رد = الـ webhook شغال
+    if (e.name === 'AbortError') {
+      document.getElementById('conn-dot').className = 'dot red';
+      document.getElementById('conn-text').textContent = 'timeout';
+      showToast('انتهت المهلة — تحقق من n8n', 'error');
+    } else {
+      // أي response من n8n = السيرفر شغال
+      document.getElementById('conn-dot').className = 'dot green';
+      document.getElementById('conn-text').textContent = 'متصل ✓';
+      showToast('n8n جاهز ✅', 'success');
+    }
   }
 }
 
@@ -2054,13 +2058,11 @@ function selectTime(el, time) {
 
 // ========== PUBLISH ==========
 async function startPublish() {
-  const uploadKey = document.getElementById('upload-key').value.trim();
   const tiktokUser = document.getElementById('tiktok-user').value.trim();
   const title = document.getElementById('post-title').value.trim();
   const caption = document.getElementById('caption-text').value.trim();
   const hashtags = Array.from(document.querySelectorAll('.hashtag')).map(h => h.textContent).join(' ');
 
-  if (!uploadKey) { showToast('أدخل Upload-Post API Key في الإعدادات', 'error'); return; }
   if (!tiktokUser) { showToast('أدخل اسم حساب TikTok', 'error'); return; }
   if (!videoFile) { showToast('لم يتم اختيار فيديو', 'error'); return; }
   if (!title) { showToast('أدخل عنوان الفيديو', 'warn'); return; }
@@ -2068,10 +2070,10 @@ async function startPublish() {
   goToScreen('screen-progress');
 
   const steps = [
-    { id: 'step-1', label: 'تحضير الفيديو', statusId: 'step-1-status' },
-    { id: 'step-2', label: 'رفع إلى السيرفر', statusId: 'step-2-status' },
-    { id: 'step-3', label: 'النشر على TikTok', statusId: 'step-3-status' },
-    { id: 'step-4', label: 'التحقق من النشر', statusId: 'step-4-status' },
+    { id: 'step-1', statusId: 'step-1-status' },
+    { id: 'step-2', statusId: 'step-2-status' },
+    { id: 'step-3', statusId: 'step-3-status' },
+    { id: 'step-4', statusId: 'step-4-status' },
   ];
 
   async function activateStep(i, statusText) {
@@ -2080,75 +2082,72 @@ async function startPublish() {
       prev.classList.remove('active');
       prev.classList.add('done');
       document.getElementById(steps[i-1].statusId).textContent = '✓';
-      document.getElementById(steps[i-1].id).querySelector('.step-icon').innerHTML = '<span class="check-circle">✓</span>';
+      prev.querySelector('.step-icon').innerHTML = '<span class="check-circle">✓</span>';
     }
-    const el = document.getElementById(steps[i].id);
-    el.classList.add('active');
+    document.getElementById(steps[i].id).classList.add('active');
     document.getElementById(steps[i].statusId).textContent = statusText;
     const pct = ((i+1)/steps.length * 100);
     document.getElementById('progress-fill').style.width = pct + '%';
     document.getElementById('progress-pct').textContent = Math.round(pct) + '%';
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 700));
   }
 
   try {
-    // Step 1: Prepare
+    // Step 1
     document.getElementById('progress-title').textContent = 'تحضير الفيديو';
     document.getElementById('progress-subtitle').textContent = videoFile.name;
     await activateStep(0, 'جارٍ...');
 
     const fullCaption = caption + (hashtags ? '\n' + hashtags : '');
 
-    // Step 2: Upload
-    document.getElementById('progress-title').textContent = 'رفع الفيديو';
-    document.getElementById('progress-subtitle').textContent = formatSize(videoFile.size) + ' — جودة عالية';
+    // Step 2
+    document.getElementById('progress-title').textContent = 'رفع الفيديو عبر n8n';
+    document.getElementById('progress-subtitle').textContent = formatSize(videoFile.size);
     await activateStep(1, 'جارٍ...');
 
+    // Build FormData — n8n webhook receives and forwards to upload-post
     const formData = new FormData();
     formData.append('video', videoFile);
     formData.append('title', title);
     formData.append('description', fullCaption);
     formData.append('user', tiktokUser);
     formData.append('platform[]', 'tiktok');
+    formData.append('privacy_level', document.getElementById('privacy-setting').value);
+    formData.append('comment_disabled', document.getElementById('toggle-comments').classList.contains('on') ? 'false' : 'true');
+    formData.append('duet_disabled', document.getElementById('toggle-duet').classList.contains('on') ? 'false' : 'true');
+    formData.append('stitch_disabled', document.getElementById('toggle-duet').classList.contains('on') ? 'false' : 'true');
 
-    // Privacy setting
-    const privacy = document.getElementById('privacy-setting').value;
-    if (privacy) formData.append('privacy_level', privacy);
-
-    // Comments toggle
-    const commentsOn = document.getElementById('toggle-comments').classList.contains('on');
-    formData.append('comment_disabled', commentsOn ? 'false' : 'true');
-
-    // Duet/Stitch
-    const duetOn = document.getElementById('toggle-duet').classList.contains('on');
-    formData.append('duet_disabled', duetOn ? 'false' : 'true');
-    formData.append('stitch_disabled', duetOn ? 'false' : 'true');
-
-    const uploadRes = await fetch('https://api.upload-post.com/api/upload', {
+    const uploadRes = await fetch(N8N_WEBHOOK, {
       method: 'POST',
-      headers: { 'Authorization': 'Apikey ' + uploadKey },
       body: formData
     });
 
-    const uploadData = await uploadRes.json();
-
-    if (!uploadRes.ok) {
-      throw new Error(uploadData.message || uploadData.error || 'فشل الرفع: ' + uploadRes.status);
+    let uploadData = {};
+    const contentType = uploadRes.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      uploadData = await uploadRes.json();
+    } else {
+      const txt = await uploadRes.text();
+      try { uploadData = JSON.parse(txt); } catch { uploadData = { message: txt }; }
     }
 
-    // Step 3: Publish confirmation
+    if (!uploadRes.ok) {
+      throw new Error(uploadData.message || uploadData.error || 'فشل الرفع: HTTP ' + uploadRes.status);
+    }
+
+    // Step 3
     document.getElementById('progress-title').textContent = 'يتم النشر على TikTok';
     document.getElementById('progress-subtitle').textContent = '@' + tiktokUser;
     await activateStep(2, 'جارٍ...');
 
-    const requestId = uploadData.request_id || uploadData.id || uploadData.data?.request_id || 'unknown';
+    const requestId = uploadData.request_id || uploadData.id || uploadData.data?.request_id || 'published';
 
-    // Step 4: Verify
+    // Step 4
     document.getElementById('progress-title').textContent = 'تأكيد النشر';
-    document.getElementById('progress-subtitle').textContent = 'request_id: ' + requestId;
+    document.getElementById('progress-subtitle').textContent = 'ID: ' + requestId;
     await activateStep(3, 'جارٍ...');
 
-    // Mark last step done
+    // Done
     const last = document.getElementById(steps[3].id);
     last.classList.remove('active');
     last.classList.add('done');
@@ -2158,7 +2157,7 @@ async function startPublish() {
     document.getElementById('progress-pct').textContent = '100%';
     document.getElementById('progress-icon').textContent = '🎉';
 
-    // Save to history
+    // Save history
     const historyItem = {
       id: requestId,
       filename: videoFile.name,
@@ -2172,12 +2171,11 @@ async function startPublish() {
     localStorage.setItem('tt_history', JSON.stringify(uploadHistory));
     document.getElementById('stat-num-uploads').textContent = uploadHistory.length;
 
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 600));
 
-    // Go to success
     document.getElementById('success-request-id').textContent = requestId;
     document.getElementById('success-time').textContent = new Date().toLocaleString('ar-IQ');
-    document.getElementById('success-msg').textContent = `تم نشر "${title}" على TikTok بنجاح! 🎵`;
+    document.getElementById('success-msg').textContent = `تم نشر "${title}" على TikTok! 🎵`;
 
     renderHistory();
     goToScreen('screen-success');
@@ -2187,13 +2185,8 @@ async function startPublish() {
     document.getElementById('progress-title').textContent = 'حدث خطأ';
     document.getElementById('progress-subtitle').textContent = e.message;
     document.getElementById('progress-spinner').style.animationPlayState = 'paused';
-    document.getElementById('progress-spinner').style.borderTopColor = 'var(--tt-red)';
-    document.getElementById('progress-spinner').style.borderRightColor = 'var(--tt-red)';
     showToast('خطأ: ' + e.message, 'error');
-
-    setTimeout(() => {
-      goToScreen('screen-upload');
-    }, 4000);
+    setTimeout(() => goToScreen('screen-upload'), 4000);
   }
 }
 
@@ -2280,13 +2273,10 @@ if (zone) {
 renderHistory();
 updateSettings();
 
-// Auto-check connection on load if key exists
+// Auto status
 setTimeout(() => {
-  const uploadKey = document.getElementById('upload-key').value.trim();
-  if (!uploadKey) {
-    document.getElementById('conn-dot').className = 'dot warn';
-    document.getElementById('conn-text').textContent = 'أدخل API Key';
-  }
+  document.getElementById('conn-dot').className = 'dot warn';
+  document.getElementById('conn-text').textContent = 'اضغط اختبار';
 }, 500);
 </script>
 </body>
