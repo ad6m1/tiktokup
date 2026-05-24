@@ -1023,12 +1023,18 @@ async function doAnalyze(){
 
     // Send to n8n which forwards to Gemini (avoids CORS & quota issues)
     const fd = new FormData();
-    fd.append('action',   'analyze');
+    fd.append('action', 'generate_caption');
     fd.append('geminiKey', key);
     fd.append('filename',  vidFile.name);
     fd.append('filesize',  fmtSz(vidFile.size));
     fd.append('filetype',  vidFile.type);
-    if(thumb) fd.append('thumb', thumb);
+    if(thumb) {
+      const byteStr = atob(thumb);
+      const arr = new Uint8Array(byteStr.length);
+      for(let i=0;i<byteStr.length;i++) arr[i]=byteStr.charCodeAt(i);
+      const blob = new Blob([arr],{type:'image/jpeg'});
+      fd.append('data', blob, 'frame.jpg');
+    }
 
     const r = await fetch(cfg('webhook'), { method:'POST', body:fd });
 
@@ -1038,9 +1044,27 @@ async function doAnalyze(){
     else { const t=await r.text(); try{data=JSON.parse(t)}catch{data={message:t}} }
 
     if(!r.ok || data.error) throw new Error(data.message||'n8n error '+r.status);
-    if(!data.caption)       throw new Error('لم يرجع n8n نتيجة صحيحة');
 
-    showAnalysis(data);
+    // Handle different response formats from n8n Gemini node
+    let analysis = data;
+
+    // If n8n Gemini node returns raw text in 'text' or 'output' field
+    if(!analysis.caption) {
+      const rawText = data.text || data.output || data.content ||
+                      data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if(rawText) {
+        const m = rawText.match(/\{[\s\S]*\}/);
+        if(m) { try{ analysis = JSON.parse(m[0]); }catch(e){} }
+      }
+    }
+
+    // If still no caption, try nested structures
+    if(!analysis.caption && data.data) analysis = data.data;
+    if(!analysis.caption && Array.isArray(data) && data[0]) analysis = data[0];
+
+    if(!analysis.caption) throw new Error('لم يرجع n8n نتيجة صحيحة — تحقق من workflow');
+
+    showAnalysis(analysis);
 
   } catch(e){
     document.getElementById('ai-loading').classList.remove('show');
